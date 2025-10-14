@@ -1,39 +1,123 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useGithubUser } from "@/hooks/useGithubUser";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
-export default function UserPage() {
-  const { username } = useParams<{ username: string }>();
-  const { data, isLoading, isError } = useGithubUser(username);
+async function getUser(username: string) {
+  const res = await fetch(`https://api.github.com/users/${username}`);
+  if (!res.ok) throw new Error("User not found");
+  return res.json();
+}
 
-  if (isLoading) return <p className="text-center mt-10">Loading...</p>;
-  if (isError)
-    return <p className="text-center text-red-500 mt-10">User not found.</p>;
+async function getRepos(username: string) {
+  const res = await fetch(
+    `https://api.github.com/users/${username}/repos?sort=updated`
+  );
+  if (!res.ok) throw new Error("Repos not found");
+  return res.json();
+}
+
+export default function UserProfilePage() {
+  const { username } = useParams();
+  const router = useRouter();
+
+  const { data: user, isLoading: userLoading } = useQuery({
+    queryKey: ["user", username],
+    queryFn: () => getUser(username as string),
+  });
+
+  const { data: repos, isLoading: repoLoading } = useQuery({
+    queryKey: ["repos", username],
+    queryFn: () => getRepos(username as string),
+  });
+
+  if (userLoading) return <p className="text-center mt-20">Loading user...</p>;
+  if (!user)
+    return <p className="text-center mt-20 text-red-500">User not found.</p>;
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6">
-      <Link href="/">
-        <Button variant="outline" className="mb-4">
+    <div className="min-h-screen bg-gray-100 p-8">
+      {/* 🔙 Back Button */}
+      <div className="max-w-3xl mx-auto mb-6">
+        <Button variant="outline" onClick={() => router.back()}>
           ← Back
         </Button>
-      </Link>
+      </div>
 
-      <div className="flex items-center gap-6">
-        <img
-          src={data.avatar_url}
-          alt={data.login}
-          className="w-32 h-32 rounded-full"
-        />
-        <div>
-          <h1 className="text-3xl font-bold">{data.name || data.login}</h1>
-          <p className="text-gray-600">@{data.login}</p>
-          <p className="mt-2">{data.bio}</p>
-          <p className="mt-2">Followers: {data.followers}</p>
-          <p>Following: {data.following}</p>
-          <p>Public Repos: {data.public_repos}</p>
+      {/* User Profile Section */}
+      <div className="flex justify-center mb-10">
+        <Card className="max-w-md w-full shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-center">
+              {user.name || user.login}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-4">
+            <Image
+              src={user.avatar_url}
+              alt={user.login}
+              width={120}
+              height={120}
+              className="rounded-full"
+            />
+            <p className="text-gray-600">@{user.login}</p>
+            <p>Followers: {user.followers}</p>
+            <p>Public Repos: {user.public_repos}</p>
+            <a
+              href={user.html_url}
+              target="_blank"
+              className="text-blue-600 underline"
+            >
+              View on GitHub
+            </a>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Repositories Section */}
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4 text-center">
+          🧩 Public Repositories
+        </h2>
+
+        {repoLoading && <p className="text-center">Loading repositories...</p>}
+
+        {!repoLoading && repos?.length === 0 && (
+          <p className="text-center text-gray-500">No repositories found.</p>
+        )}
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {repos?.slice(0, 9).map((repo: any, index: number) => (
+            <motion.div
+              key={repo.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className="hover:shadow-xl transition-shadow bg-white/80 backdrop-blur-md border border-gray-200">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-blue-700 truncate">
+                    <a href={repo.html_url} target="_blank">
+                      {repo.name}
+                    </a>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-gray-600 line-clamp-2">
+                    {repo.description || "No description"}
+                  </p>
+                  <div className="flex justify-between text-gray-500 text-xs">
+                    <span>⭐ {repo.stargazers_count}</span>
+                    <span>{repo.language || "Unknown"}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>

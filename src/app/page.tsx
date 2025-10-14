@@ -16,9 +16,12 @@ export default function HomePage() {
 
   const { data, isLoading, isError } = useGithubUser(search);
 
-  const handleSearch = () => {
-    setSearch(username.trim());
-    setLastUser(username.trim());
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault(); // prevent form reload
+    if (username.trim()) {
+      setSearch(username.trim());
+      setLastUser(username.trim());
+    }
   };
 
   return (
@@ -27,14 +30,15 @@ export default function HomePage() {
         GitHub User Finder
       </h1>
 
-      <div className="flex gap-2 mb-6">
+      {/* 🔍 Input + Button inside form */}
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <Input
           placeholder="Enter GitHub username..."
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-        <Button onClick={handleSearch}>Search</Button>
-      </div>
+        <Button type="submit">Search</Button>
+      </form>
 
       {isLoading && (
         <div className="space-y-3">
@@ -59,10 +63,8 @@ export default function HomePage() {
             <div>
               <p>Followers: {data.followers}</p>
               <p>Public Repos: {data.public_repos}</p>
-
-              {/* ✅ FIXED HERE */}
               <Link href={`/user/${data.login}`}>
-                <Button className="mt-2">View More</Button>
+                <Button>View More</Button>
               </Link>
             </div>
           </CardContent>
