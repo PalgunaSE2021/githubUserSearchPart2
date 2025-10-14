@@ -17,7 +17,7 @@ export default function HomePage() {
   const { data, isLoading, isError } = useGithubUser(search);
 
   const handleSearch = (e?: React.FormEvent) => {
-    e?.preventDefault(); // prevent form reload
+    e?.preventDefault();
     if (username.trim()) {
       setSearch(username.trim());
       setLastUser(username.trim());
@@ -30,7 +30,6 @@ export default function HomePage() {
         GitHub User Finder
       </h1>
 
-      {/* 🔍 Input + Button inside form */}
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <Input
           placeholder="Enter GitHub username..."
@@ -47,7 +46,11 @@ export default function HomePage() {
         </div>
       )}
 
-      {isError && <p className="text-red-500 text-center">User not found.</p>}
+      {isError && (
+        <p className="text-red-500 text-center">
+          ❌ User not found. Please try another username.
+        </p>
+      )}
 
       {data && (
         <Card className="mt-4">
