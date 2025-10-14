@@ -23,7 +23,7 @@ async function getUser(username: string) {
   return res.json();
 }
 
-async function getRepos(username: string, page: number, perPage: number = 5) {
+async function getRepos(username: string, page: number, perPage: number = 6) {
   const res = await fetch(
     `https://api.github.com/users/${username}/repos?sort=updated&per_page=${perPage}&page=${page}`
   );
@@ -34,7 +34,7 @@ async function getRepos(username: string, page: number, perPage: number = 5) {
 export default function UserProfilePage() {
   const { username } = useParams();
   const router = useRouter();
-  const [page, setPage] = useState(1); // current page
+  const [page, setPage] = useState(1);
   const perPage = 6;
 
   const {
@@ -151,26 +151,24 @@ export default function UserProfilePage() {
           ))}
         </div>
 
-        {/* Pagination Controls */}
-        {repos?.length === perPage && (
-          <div className="flex justify-center mt-6 gap-4">
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </Button>
-            <span className="flex items-center px-2">{page}</span>
-            <Button
-              variant="outline"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={repos.length < perPage} // if less than perPage, no next
-            >
-              Next
-            </Button>
-          </div>
-        )}
+        {/* Pagination Controls - Always Visible */}
+        <div className="flex justify-center mt-6 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span className="flex items-center px-2">{page}</span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={repos?.length < perPage} // disable next if less than perPage
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );
