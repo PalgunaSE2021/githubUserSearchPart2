@@ -8,14 +8,16 @@ import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const [username, setUsername] = useState("");
-  const { setLastUser } = useUserStore();
+  const { setLastUser, recentUsers, addRecentUser } = useUserStore();
   const router = useRouter();
 
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmed = username.trim();
     if (!trimmed) return;
+
     setLastUser(trimmed);
+    addRecentUser(trimmed);
     router.push(`/user/${trimmed}`);
   };
 
@@ -33,6 +35,25 @@ export default function HomePage() {
         />
         <Button type="submit">Search</Button>
       </form>
+
+      {/* Recent Search History */}
+      {recentUsers.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-semibold mb-2">Recent Searches</h2>
+          <div className="flex gap-2 flex-wrap">
+            {recentUsers.slice(0, 5).map((u, idx) => (
+              <Button
+                key={idx}
+                size="sm"
+                variant="outline"
+                onClick={() => router.push(`/user/${u}`)}
+              >
+                {u}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
