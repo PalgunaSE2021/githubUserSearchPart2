@@ -7,6 +7,15 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
+interface Repo {
+  id: number;
+  name: string;
+  html_url: string;
+  description: string | null;
+  stargazers_count: number;
+  language: string | null;
+}
+
 async function getUser(username: string) {
   const res = await fetch(`https://api.github.com/users/${username}`);
   if (!res.ok) throw new Error("User not found");
@@ -91,7 +100,7 @@ export default function UserProfilePage() {
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {repos?.slice(0, 9).map((repo: any, index: number) => (
+          {repos?.slice(0, 9).map((repo: Repo, index: number) => (
             <motion.div
               key={repo.id}
               initial={{ opacity: 0, y: 20 }}
