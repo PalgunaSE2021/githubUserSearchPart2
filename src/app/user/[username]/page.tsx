@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface Repo {
   id: number;
@@ -22,9 +23,9 @@ async function getUser(username: string) {
   return res.json();
 }
 
-async function getRepos(username: string) {
+async function getRepos(username: string, page: number, perPage: number = 5) {
   const res = await fetch(
-    `https://api.github.com/users/${username}/repos?sort=updated`
+    `https://api.github.com/users/${username}/repos?sort=updated&per_page=${perPage}&page=${page}`
   );
   if (!res.ok) throw new Error("Repos not found");
   return res.json();
@@ -33,20 +34,36 @@ async function getRepos(username: string) {
 export default function UserProfilePage() {
   const { username } = useParams();
   const router = useRouter();
+  const [page, setPage] = useState(1); // current page
+  const perPage = 6;
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const {
+    data: user,
+    isLoading: userLoading,
+    isError: userError,
+  } = useQuery({
     queryKey: ["user", username],
     queryFn: () => getUser(username as string),
   });
 
   const { data: repos, isLoading: repoLoading } = useQuery({
-    queryKey: ["repos", username],
-    queryFn: () => getRepos(username as string),
+    queryKey: ["repos", username, page],
+    queryFn: () => getRepos(username as string, page, perPage),
+    enabled: !!username,
   });
 
   if (userLoading) return <p className="text-center mt-20">Loading user...</p>;
-  if (!user)
-    return <p className="text-center mt-20 text-red-500">User not found.</p>;
+
+  if (userError || !user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <p className="text-red-500 text-xl mb-4">❌ User not found.</p>
+        <Button variant="outline" onClick={() => router.push("/")}>
+          Search Another User
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -96,11 +113,16 @@ export default function UserProfilePage() {
         {repoLoading && <p className="text-center">Loading repositories...</p>}
 
         {!repoLoading && repos?.length === 0 && (
-          <p className="text-center text-gray-500">No repositories found.</p>
+          <div className="flex flex-col items-center space-y-4 text-center mt-6">
+            <p className="text-gray-500 text-lg">No repositories found.</p>
+            <Button variant="outline" onClick={() => router.push("/")}>
+              Search Another User
+            </Button>
+          </div>
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {repos?.slice(0, 9).map((repo: Repo, index: number) => (
+          {repos?.map((repo: Repo, index: number) => (
             <motion.div
               key={repo.id}
               initial={{ opacity: 0, y: 20 }}
@@ -128,6 +150,27 @@ export default function UserProfilePage() {
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {repos?.length === perPage && (
+          <div className="flex justify-center mt-6 gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <span className="flex items-center px-2">{page}</span>
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={repos.length < perPage} // if less than perPage, no next
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
