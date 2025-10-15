@@ -6,7 +6,8 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useUserStore } from "@/store/userStore"; // ✅ import store
 
 interface Repo {
   id: number;
@@ -37,6 +38,8 @@ export default function UserProfilePage() {
   const [page, setPage] = useState(1);
   const perPage = 6;
 
+  const { addRecentUser } = useUserStore(); // ✅ get from Zustand store
+
   const {
     data: user,
     isLoading: userLoading,
@@ -51,6 +54,13 @@ export default function UserProfilePage() {
     queryFn: () => getRepos(username as string, page, perPage),
     enabled: !!username,
   });
+
+  // ✅ STEP 2: Update recent searches only after confirming user exists
+  useEffect(() => {
+    if (!userLoading && user && !userError) {
+      addRecentUser(user.login);
+    }
+  }, [user, userLoading, userError, addRecentUser]);
 
   if (userLoading) return <p className="text-center mt-20">Loading user...</p>;
 
@@ -164,7 +174,7 @@ export default function UserProfilePage() {
           <Button
             variant="outline"
             onClick={() => setPage((p) => p + 1)}
-            disabled={repos?.length < perPage} // disable next if less than perPage
+            disabled={repos?.length < perPage}
           >
             Next
           </Button>
